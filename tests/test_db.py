@@ -2,10 +2,10 @@ from dataclasses import asdict
 
 from sqlalchemy import select
 
-from fast_zero.models import User
+from fast_zero.models import Todo, User
 
 
-def test_create_user(session, mock_db_time):
+def test_create_user_without_todos(session, mock_db_time):
     with mock_db_time(model=User) as time:
         new_user = User(
             username='alice', password='secret', email='teste@test'
@@ -21,4 +21,22 @@ def test_create_user(session, mock_db_time):
         'password': 'secret',
         'email': 'teste@test',
         'created_at': time,
+        'todos': [],
     }
+
+
+def test_create_todo(session, user: User):
+    todo = Todo(
+        title='Test Todo',
+        description='Test Desc',
+        state='draft',
+        user_id=user.id,
+    )
+
+    session.add(todo)
+    session.commit()
+    session.refresh(todo)
+
+    user = session.scalar(select(User).where(User.id == user.id))
+
+    assert todo in user.todos
